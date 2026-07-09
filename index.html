@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Travel Tracker & Adventure Dashboard</title>
+    
+    <!-- Premium Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Cinzel:wght@600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- D3.js and TopoJSON -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+    
+    <!-- Local Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Drifting clouds background elements -->
+    <div class="cloud-bg-wrapper">
+        <div class="cloud cloud-1"></div>
+        <div class="cloud cloud-2"></div>
+        <div class="cloud cloud-3"></div>
+        <div class="cloud cloud-4"></div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Main Navigation Header -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <div class="logo-icon-wrapper">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                </div>
+                <div class="logo-text">
+                    <div class="traveler-name-wrapper">
+                        <input type="text" id="traveler-name-input" value="My" 
+                               class="traveler-name-input" 
+                               placeholder="Traveler Name" title="Click to rename your adventure">
+                        <h1 class="logo-title">US Adventure Map</h1>
+                    </div>
+                    <p class="logo-subtitle">Visualize your footprint, discover what's left to explore</p>
+                </div>
+            </div>
+
+            <!-- Global Dashboard Stats -->
+            <div class="header-stats">
+                <div class="stat-card stat-visited">
+                    <div class="stat-ring-container">
+                        <svg class="progress-ring" width="56" height="56">
+                            <circle class="progress-ring-bg" stroke="rgba(0,0,0,0.05)" stroke-width="5" fill="transparent" r="23" cx="28" cy="28"/>
+                            <circle class="progress-ring-bar" id="percent-ring" stroke="var(--primary)" stroke-width="5" stroke-linecap="round" fill="transparent" r="23" cx="28" cy="28"/>
+                        </svg>
+                        <div class="stat-value" id="percent-counter">0%</div>
+                    </div>
+                    <div class="stat-label-group">
+                        <span class="stat-lbl-main" id="visited-counter">0</span>
+                        <span class="stat-lbl-sub">States Visited</span>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-remaining">
+                    <div class="stat-icon-badge color-orange">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </div>
+                    <div class="stat-label-group">
+                        <span class="stat-lbl-main" id="unvisited-counter">50</span>
+                        <span class="stat-lbl-sub">Remaining</span>
+                    </div>
+                </div>
+
+                <div class="stat-card stat-landmarks">
+                    <div class="stat-icon-badge color-indigo">
+                        <i class="fa-solid fa-monument"></i>
+                    </div>
+                    <div class="stat-label-group">
+                        <span class="stat-lbl-main" id="landmarks-counter">0/150</span>
+                        <span class="stat-lbl-sub">Landmarks Checked</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Theme Selector -->
+            <div class="theme-picker-container">
+                <button class="theme-btn active" id="theme-classic" onclick="toggleMapTheme('classic')" title="Cloud Explorer">
+                    <span class="theme-dot color-classic"></span>
+                </button>
+                <button class="theme-btn" id="theme-vintage" onclick="toggleMapTheme('vintage')" title="Sunset Flight">
+                    <span class="theme-dot color-vintage"></span>
+                </button>
+                <button class="theme-btn" id="theme-cyber" onclick="toggleMapTheme('cyber')" title="Stratosphere Dark">
+                    <span class="theme-dot color-cyber"></span>
+                </button>
+                <button class="theme-btn" id="theme-aurora" onclick="toggleMapTheme('aurora')" title="Aurora Horizon">
+                    <span class="theme-dot color-aurora"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Layout Grid (Restructured into 3 Columns) -->
+    <main class="app-main dashboard-grid">
+        
+        <!-- COLUMN 1: Sync & Regions (Left Column) -->
+        <div class="dashboard-col left-column">
+            
+            <!-- Share & Print Hub -->
+            <div class="print-export-card sidebar-card">
+                <h3 class="section-title"><i class="fa-solid fa-print"></i> Share & Print Hub</h3>
+                <div class="hub-action-stack">
+                    <button onclick="window.print()" class="btn btn-primary btn-sm btn-block">
+                        <i class="fa-solid fa-file-pdf"></i> Print / Save PDF
+                    </button>
+                    <button onclick="exportToCSV()" class="btn btn-secondary btn-sm btn-block">
+                        <i class="fa-solid fa-file-csv"></i> Export CSV Spreadsheet
+                    </button>
+                    <div class="hub-divider"></div>
+                    <div class="hub-backup-actions">
+                        <span class="hub-backup-lbl">Local Data Backup</span>
+                        <div class="cloud-btn-grid">
+                            <button onclick="downloadBackup()" class="btn btn-secondary btn-xs">
+                                <i class="fa-solid fa-file-arrow-down"></i> Save Backup
+                            </button>
+                            <button onclick="triggerFileInput()" class="btn btn-secondary btn-xs">
+                                <i class="fa-solid fa-file-arrow-up"></i> Load Backup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Regional Summary Progress Bars -->
+            <div class="regions-section sidebar-card">
+                <h3 class="section-title"><i class="fa-solid fa-earth-americas"></i> Regional Footprint</h3>
+                <div class="regions-grid" id="regions-progress-container">
+                    <!-- Dynamic region progress meters will go here -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- COLUMN 2: Map & State Inspector (Center Column) -->
+        <div class="dashboard-col center-column">
+            
+            <!-- Dynamic Vector Map Container Card -->
+            <section class="map-card">
+                <div class="map-header">
+                    <div class="map-badge">
+                        <span class="pulse-indicator"></span>
+                        Interactive Map Canvas
+                    </div>
+                    <div id="map-tooltip" class="map-tooltip">Hover over a state</div>
+                </div>
+
+                <!-- D3 SVG Viewport & Controls wrapper -->
+                <div class="map-viewport-wrapper" id="map-parent">
+                    <!-- Zoom Controls HUD Overlay -->
+                    <div class="zoom-controls-hud">
+                        <button onclick="zoomInMap()" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
+                        <button onclick="zoomOutMap()" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
+                        <button onclick="resetMapZoom()" title="Reset View"><i class="fa-solid fa-maximize"></i></button>
+                    </div>
+
+                    <!-- Coordinates HUD -->
+                    <div id="coordinates-hud" class="coordinates-hud">LAT: 37.0902° N | LNG: 95.7129° W</div>
+
+                    <!-- Map Compass Rose Overlay -->
+                    <div class="compass-rose">
+                        <svg viewBox="0 0 100 100" width="54" height="54">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="var(--primary)" stroke-width="1.5" stroke-dasharray="2 2" />
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="var(--primary)" stroke-width="0.75" />
+                            <polygon points="50,15 54,46 50,50" fill="var(--primary)" />
+                            <polygon points="50,15 46,46 50,50" fill="var(--primary-glow)" />
+                            <polygon points="50,85 46,54 50,50" fill="var(--primary-glow)" />
+                            <polygon points="50,85 54,54 50,50" fill="var(--primary)" />
+                            
+                            <polygon points="85,50 54,46 50,50" fill="var(--primary)" />
+                            <polygon points="85,50 54,54 50,50" fill="var(--primary-glow)" />
+                            <polygon points="15,50 46,54 50,50" fill="var(--primary-glow)" />
+                            <polygon points="15,50 46,46 50,50" fill="var(--primary)" />
+                            <text x="50" y="11" font-size="10" font-family="var(--font-mono)" font-weight="bold" fill="var(--primary)" text-anchor="middle">N</text>
+                            <text x="50" y="96" font-size="10" font-family="var(--font-mono)" font-weight="bold" fill="var(--primary)" text-anchor="middle">S</text>
+                            <text x="96" y="53" font-size="10" font-family="var(--font-mono)" font-weight="bold" fill="var(--primary)" text-anchor="middle">E</text>
+                            <text x="4" y="53" font-size="10" font-family="var(--font-mono)" font-weight="bold" fill="var(--primary)" text-anchor="middle">W</text>
+                            <circle cx="50" cy="50" r="3" fill="var(--bg-card-solid)" stroke="var(--primary)" stroke-width="1.5" />
+                        </svg>
+                    </div>
+
+                    <!-- Map Loading Overlay -->
+                    <div id="map-loader" class="map-loader">
+                        <div class="spinner"></div>
+                        <p class="loader-text">Drawing vector map path layers...</p>
+                    </div>
+                    
+                    <svg id="us-svg-map" viewBox="0 0 960 600"></svg>
+                </div>
+
+                <!-- Drag and Drop Import Tray Overlay -->
+                <div class="dropzone-info-bar" id="drop-zone">
+                    <i class="fa-solid fa-file-arrow-up"></i>
+                    <span><strong>Pro-Tip:</strong> Drag & drop a <code>.json</code> backup file anywhere to restore data! Or click here to <span class="upload-link" onclick="triggerFileInput()">browse files</span>.</span>
+                </div>
+            </section>
+
+            <!-- State Inspector Detail Panel -->
+            <section class="inspector-card" id="state-inspector">
+                <!-- Placeholder when no state is selected -->
+                <div id="inspector-placeholder" class="inspector-placeholder">
+                    <div class="crosshair-icon-wrapper">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                    </div>
+                    <h3>Select a State to Inspect</h3>
+                    <p>Click on any state on the map or select from the ledger to view regional stats, manage trip logs, and check off landmarks.</p>
+                </div>
+
+                <!-- Active Inspector Panel -->
+                <div id="inspector-content" class="inspector-content hidden">
+                    
+                    <!-- Left Section: Header, Memo, and Details -->
+                    <div class="inspector-details-column">
+                        <div class="inspector-header">
+                            <div id="inspector-badge" class="state-alpha-badge">US</div>
+                            <div class="inspector-title-group">
+                                <h3 id="inspector-name" class="inspector-state-name">State Inspector</h3>
+                                <p id="inspector-status-text" class="inspector-status-subtitle">Details about this state</p>
+                            </div>
+                        </div>
+
+                        <!-- Visit Toggle & Metadata -->
+                        <div class="inspector-status-actions">
+                            <div class="inspector-metadata-box">
+                                <span class="metadata-lbl">Status</span>
+                                <span id="info-status-pill" class="status-pill">Bucket List</span>
+                            </div>
+                            <button id="inspector-toggle-btn" class="btn btn-sm">Mark Visited</button>
+                        </div>
+
+                        <!-- Travel Notes / General Memo -->
+                        <div class="notes-text-area-group">
+                            <label for="state-memo" class="editor-label">Wishlist Goals / General Notes</label>
+                            <textarea id="state-memo" placeholder="Add general thoughts, packing list notes, or general trip plans here..." rows="3"></textarea>
+                            <button id="save-memo-btn" onclick="saveStateDetails()" class="btn btn-dark btn-sm btn-save-notes">
+                                <i class="fa-solid fa-floppy-disk"></i> Save Notes
+                            </button>
+                        </div>
+
+                        <!-- Famous Landmarks Checklist -->
+                        <div class="landmarks-checklist-group">
+                            <h4 class="sub-section-title"><i class="fa-solid fa-monument"></i> Major Landmarks</h4>
+                            <div class="landmarks-list" id="landmarks-list-container">
+                                <!-- Preloaded landmarks injected here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Section: Chronological Trip Log Timeline -->
+                    <div class="inspector-timeline-column">
+                        <h4 class="sub-section-title"><i class="fa-solid fa-route"></i> Travel Memories Log</h4>
+                        
+                        <!-- Add Trip Form -->
+                        <form id="add-trip-form" class="add-trip-form">
+                            <div class="form-row">
+                                <input type="text" id="trip-name" placeholder="Trip/Location Name (e.g. Grand Canyon hike)" class="form-input text-field" required>
+                            </div>
+                            <div class="form-grid">
+                                <input type="month" id="trip-date" class="form-input date-field" required>
+                                <select id="trip-type" class="form-input select-field">
+                                    <option value="Vacation">✈️ Vacation</option>
+                                    <option value="Road Trip">🚗 Road Trip</option>
+                                    <option value="Outdoor">⛺ Outdoor</option>
+                                    <option value="Business">💼 Business</option>
+                                    <option value="Family">🏡 Family</option>
+                                    <option value="Other">📍 Other</option>
+                                </select>
+                            </div>
+                            <div class="form-row flex-row-end">
+                                <button type="submit" class="btn btn-primary btn-sm flex-1"><i class="fa-solid fa-plus"></i> Add Trip Entry</button>
+                            </div>
+                        </form>
+
+                        <!-- Timeline Log Container -->
+                        <div class="trips-timeline-wrapper">
+                            <div class="timeline-empty" id="timeline-empty-message">
+                                <i class="fa-solid fa-timeline"></i>
+                                <span>No trips logged yet. Log your first adventure above!</span>
+                            </div>
+                            <div class="timeline-list" id="timeline-list-container">
+                                <!-- Logged trips timeline items will go here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </section>
+
+        </div>
+
+        <!-- COLUMN 3: Scrollable State Ledger (Right Column) -->
+        <div class="dashboard-col right-column">
+            
+            <aside class="sidebar-card state-ledger-widget">
+                <!-- Search and Filter Panel inside state list window -->
+                <div class="filter-panel">
+                    <h3 class="section-title"><i class="fa-solid fa-list-check"></i> Adventure Ledger</h3>
+                    <div class="search-box-wrapper">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="search-input" placeholder="Filter states..." class="search-input">
+                    </div>
+                    <select id="status-filter" class="status-dropdown">
+                        <option value="all">All States</option>
+                        <option value="visited">Visited</option>
+                        <option value="unvisited">Bucket List</option>
+                    </select>
+                </div>
+
+                <!-- Scrollable State Checklist Ledger -->
+                <div class="state-ledger-container custom-scrollbar">
+                    <div class="ledger-header-row">
+                        <span>State List</span>
+                        <span id="ledger-count">50 States</span>
+                    </div>
+                    <div class="state-list" id="states-list-container">
+                        <div class="loader-centered">
+                            <i class="fa-solid fa-circle-notch animate-spin"></i> Loading States...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar Bulk Commands -->
+                <div class="sidebar-bulk-actions">
+                    <button onclick="bulkMarkAll(true)" class="btn btn-secondary btn-xs flex-1">
+                        <i class="fa-solid fa-check-double color-green"></i> Mark Visited
+                    </button>
+                    <button onclick="bulkMarkAll(false)" class="btn btn-secondary btn-xs flex-1">
+                        <i class="fa-solid fa-rotate-left color-orange"></i> Reset Pins
+                    </button>
+                </div>
+            </aside>
+
+        </div>
+    </main>
+
+    <!-- Hidden Input for Backup Restoring -->
+    <input type="file" id="backup-upload-input" class="hidden" accept=".json">
+
+    <!-- Global Footer & Export Commands -->
+    <footer class="app-footer">
+        <div class="footer-container max-width-7xl">
+            <span class="footer-copy">© 2026 US Adventure Map. Perfect for tracking travels.</span>
+            <div class="footer-export-actions">
+                <button onclick="exportToCSV()" class="btn btn-secondary btn-xs">
+                    <i class="fa-solid fa-file-csv color-green"></i> Export to CSV
+                </button>
+                <button onclick="window.print()" class="btn btn-secondary btn-xs">
+                    <i class="fa-solid fa-file-pdf color-red"></i> Print / Save PDF Report
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Main Logic Script (Loaded as ESM) -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

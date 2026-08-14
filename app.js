@@ -333,10 +333,13 @@ function showToast(title, message, type = 'info') {
     toast.innerHTML = `
         <div class="toast-icon"><i class="fa-solid ${iconClass}"></i></div>
         <div class="toast-details">
-            <h5 class="toast-title">${title}</h5>
-            <p class="toast-msg">${message}</p>
+            <h5 class="toast-title"></h5>
+            <p class="toast-msg"></p>
         </div>
     `;
+    toast.querySelector('.toast-title').textContent = title;
+    toast.querySelector('.toast-msg').textContent = message;
+
     container.appendChild(toast);
     
     setTimeout(() => toast.classList.add("visible"), 10);

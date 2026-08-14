@@ -1,0 +1,27 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CJS2videotech/CJ-s-USA-travel-tracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/CJS2videotech/CJ-s-USA-travel-tracker/issues"
+  },
+  "homepage": "https://github.com/CJS2videotech/CJ-s-USA-travel-tracker#readme",
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
+    "jsdom": "^29.1.1"
+  }
+}

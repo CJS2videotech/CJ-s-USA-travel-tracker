@@ -261,6 +261,7 @@ let selectedState = null;
 let activeTheme = 'classic';
 let currentSyncCode = '';
 let firebaseReady = false;
+window.setFirebaseReadyForTesting = (val) => { firebaseReady = val; };
 let db = null;
 let auth = null;
 
@@ -1254,6 +1255,7 @@ window.zoomInMap = zoomInMap;
 window.zoomOutMap = zoomOutMap;
 window.resetMapZoom = resetMapZoom;
 window.deleteTripEntry = deleteTripEntry;
+window.showToast = showToast;
 
 // Bootstrapping
 window.onload = function() {

@@ -255,14 +255,16 @@ const themes = {
 };
 
 // 2. Active Application State
-let travels = initialTravelData;
-let travelerName = 'My';
-let selectedState = null;
-let activeTheme = 'classic';
-let currentSyncCode = '';
-let firebaseReady = false;
-let db = null;
-let auth = null;
+const AppState = {
+    travels: initialTravelData,
+    travelerName: 'My',
+    selectedState: null,
+    activeTheme: 'classic',
+    currentSyncCode: '',
+    firebaseReady: false,
+    db: null,
+    auth: null
+};
 
 const appId = 'us-travel-tracker';
 
@@ -290,7 +292,7 @@ function loadLocalStorage() {
             // Deep merge to safeguard schema updates (trips/landmarks)
             Object.keys(initialTravelData).forEach(state => {
                 if (parsed[state]) {
-                    travels[state] = {
+                    AppState.travels[state] = {
                         unvisited: parsed[state].unvisited !== undefined ? parsed[state].unvisited : true,
                         notes: parsed[state].notes || "",
                         date: parsed[state].date || "",
@@ -301,9 +303,9 @@ function loadLocalStorage() {
             });
         }
         
-        travelerName = localStorage.getItem('us_travel_traveler_name') || 'My';
-        activeTheme = localStorage.getItem('us_travel_map_theme') || 'classic';
-        currentSyncCode = localStorage.getItem('us_travel_sync_code') || '';
+        AppState.travelerName = localStorage.getItem('us_travel_traveler_name') || 'My';
+        AppState.activeTheme = localStorage.getItem('us_travel_map_theme') || 'classic';
+        AppState.currentSyncCode = localStorage.getItem('us_travel_sync_code') || '';
     } catch (e) {
         console.warn("Failed to load local storage.", e);
     }
@@ -311,10 +313,10 @@ function loadLocalStorage() {
 
 function saveLocalStorage() {
     try {
-        localStorage.setItem('us_travel_data_map', JSON.stringify(travels));
-        localStorage.setItem('us_travel_traveler_name', travelerName);
-        localStorage.setItem('us_travel_map_theme', activeTheme);
-        localStorage.setItem('us_travel_sync_code', currentSyncCode);
+        localStorage.setItem('us_travel_data_map', JSON.stringify(AppState.travels));
+        localStorage.setItem('us_travel_traveler_name', AppState.travelerName);
+        localStorage.setItem('us_travel_map_theme', AppState.activeTheme);
+        localStorage.setItem('us_travel_sync_code', AppState.currentSyncCode);
     } catch (e) {
         console.error("Local caching failed", e);
     }
@@ -360,13 +362,13 @@ async function initFirebase() {
             const { getFirestore, doc, setDoc, getDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
             
             const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            firebaseReady = true;
+            AppState.db = getFirestore(app);
+            AppState.auth = getAuth(app);
+            AppState.firebaseReady = true;
             
             // Sync status badge update
             const badge = document.getElementById("sync-status-badge");
-            badge.textContent = currentSyncCode ? "Cloud Active" : "Cloud Ready";
+            badge.textContent = AppState.currentSyncCode ? "Cloud Active" : "Cloud Ready";
             badge.className = "sync-badge synced";
 
             // Expose sync operations globally
@@ -374,12 +376,12 @@ async function initFirebase() {
                 let userCreds;
                 const token = window.__initial_auth_token || window.initialAuthTokenGlobal;
                 if (token) {
-                    userCreds = await signInWithCustomToken(auth, token);
+                    userCreds = await signInWithCustomToken(AppState.auth, token);
                 } else {
-                    userCreds = await signInAnonymously(auth);
+                    userCreds = await signInAnonymously(AppState.auth);
                 }
                 if (!userCreds.user) throw new Error("Anonymous auth failed");
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'maps', currentSyncCode);
+                const docRef = doc(AppState.db, 'artifacts', appId, 'public', 'data', 'maps', AppState.currentSyncCode);
                 await setDoc(docRef, payload);
             };
 
@@ -387,11 +389,11 @@ async function initFirebase() {
                 let userCreds;
                 const token = window.__initial_auth_token || window.initialAuthTokenGlobal;
                 if (token) {
-                    userCreds = await signInWithCustomToken(auth, token);
+                    userCreds = await signInWithCustomToken(AppState.auth, token);
                 } else {
-                    userCreds = await signInAnonymously(auth);
+                    userCreds = await signInAnonymously(AppState.auth);
                 }
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'maps', code);
+                const docRef = doc(AppState.db, 'artifacts', appId, 'public', 'data', 'maps', code);
                 const docSnap = await getDoc(docRef);
                 return docSnap.exists() ? docSnap.data() : null;
             };
@@ -420,7 +422,7 @@ async function initMap() {
         renderLedger();
         
         // Auto select Arizona as default highlight on load if visited
-        if (travels["Arizona"] && !travels["Arizona"].unvisited) {
+        if (AppState.travels["Arizona"] && !AppState.travels["Arizona"].unvisited) {
             selectState("Arizona");
         }
     } catch (e) {
@@ -441,7 +443,7 @@ function renderMap() {
     
     // Clear out D3 group elements
     g.selectAll("*").remove();
-    d3.select("#map-parent").style("background-color", themes[activeTheme].ocean);
+    d3.select("#map-parent").style("background-color", themes[AppState.activeTheme].ocean);
     
     const statesGeo = topojson.feature(usMapData, usMapData.objects.states).features;
     
@@ -454,24 +456,24 @@ function renderMap() {
         .attr("fill", d => {
             const stateName = fipsToState[d.id];
             if (!stateName) return "#e2e8f0";
-            const item = travels[stateName];
-            if (!item) return themes[activeTheme].unvisited;
+            const item = AppState.travels[stateName];
+            if (!item) return themes[AppState.activeTheme].unvisited;
             
-            const isSelected = selectedState === stateName;
+            const isSelected = AppState.selectedState === stateName;
             if (isSelected) return "url(#selected-stripe-pattern)";
             
-            return item.unvisited ? themes[activeTheme].unvisited : themes[activeTheme].visited;
+            return item.unvisited ? themes[AppState.activeTheme].unvisited : themes[AppState.activeTheme].visited;
         })
         .attr("stroke", d => {
             const stateName = fipsToState[d.id];
-            if (!stateName) return themes[activeTheme].stroke;
-            const isUnvisited = travels[stateName]?.unvisited;
-            return isUnvisited ? themes[activeTheme].unvisitedBorder : themes[activeTheme].visitedBorder;
+            if (!stateName) return themes[AppState.activeTheme].stroke;
+            const isUnvisited = AppState.travels[stateName]?.unvisited;
+            return isUnvisited ? themes[AppState.activeTheme].unvisitedBorder : themes[AppState.activeTheme].visitedBorder;
         })
         .attr("stroke-width", "1.5px")
         .on("mouseover", function(event, d) {
             const stateName = fipsToState[d.id] || "Unknown Territory";
-            const isUnvisited = travels[stateName]?.unvisited;
+            const isUnvisited = AppState.travels[stateName]?.unvisited;
             const status = isUnvisited ? "Bucket List" : "Visited";
             
             document.getElementById("map-tooltip").innerHTML = `<strong>${stateName}</strong> (${status})`;
@@ -482,11 +484,11 @@ function renderMap() {
         })
         .on("mouseout", function(event, d) {
             const stateName = fipsToState[d.id];
-            document.getElementById("map-tooltip").textContent = selectedState ? `Inspecting ${selectedState}` : "Hover over a state";
+            document.getElementById("map-tooltip").textContent = AppState.selectedState ? `Inspecting ${AppState.selectedState}` : "Hover over a state";
             
-            const isUnvisited = travels[stateName]?.unvisited;
+            const isUnvisited = AppState.travels[stateName]?.unvisited;
             d3.select(this)
-                .attr("stroke", isUnvisited ? themes[activeTheme].unvisitedBorder : themes[activeTheme].visitedBorder)
+                .attr("stroke", isUnvisited ? themes[AppState.activeTheme].unvisitedBorder : themes[AppState.activeTheme].visitedBorder)
                 .attr("stroke-width", "1.5px");
         })
         .on("click", (event, d) => {
@@ -506,14 +508,14 @@ function renderMap() {
         .attr("patternUnits", "userSpaceOnUse")
         .attr("patternTransform", "rotate(45)")
         .html(`
-            <rect width="8" height="8" fill="${themes[activeTheme].visited}" />
+            <rect width="8" height="8" fill="${themes[AppState.activeTheme].visited}" />
             <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,255,255,0.25)" stroke-width="3" />
         `);
 
     // 3. Render Orange Pin Markers for unvisited states
     statesGeo.forEach(d => {
         const stateName = fipsToState[d.id];
-        if (!stateName || !travels[stateName]?.unvisited) return;
+        if (!stateName || !AppState.travels[stateName]?.unvisited) return;
         
         const centroid = path.centroid(d);
         if (!centroid || isNaN(centroid[0]) || isNaN(centroid[1])) return;
@@ -611,17 +613,17 @@ function renderLedger() {
     
     container.innerHTML = "";
     
-    const sortedStates = Object.keys(travels).sort();
+    const sortedStates = Object.keys(AppState.travels).sort();
     let renderCount = 0;
     
     sortedStates.forEach(name => {
-        const item = travels[name];
+        const item = AppState.travels[name];
         if (searchVal && !name.toLowerCase().includes(searchVal)) return;
         if (filterVal === 'visited' && item.unvisited) return;
         if (filterVal === 'unvisited' && !item.unvisited) return;
         
         renderCount++;
-        const isSelected = selectedState === name;
+        const isSelected = AppState.selectedState === name;
         const stateRow = document.createElement("div");
         stateRow.className = `state-row ${isSelected ? 'selected' : ''}`;
         stateRow.onclick = () => {
@@ -674,10 +676,10 @@ function updateDashboard() {
     const totalStates = 50; // Standard US states for percentage explored
     
     // Count visited states (unvisited === false) excluding territories
-    Object.keys(travels).forEach(name => {
+    Object.keys(AppState.travels).forEach(name => {
         // Exclude territories from standard 50 count percentage
         if (!regions.Territories.includes(name)) {
-            if (!travels[name].unvisited) visitedCount++;
+            if (!AppState.travels[name].unvisited) visitedCount++;
         }
     });
     
@@ -699,8 +701,8 @@ function updateDashboard() {
     
     // Count checked landmarks globally
     let landmarkCount = 0;
-    Object.keys(travels).forEach(name => {
-        if (travels[name].landmarks) landmarkCount += travels[name].landmarks.length;
+    Object.keys(AppState.travels).forEach(name => {
+        if (AppState.travels[name].landmarks) landmarkCount += AppState.travels[name].landmarks.length;
     });
     document.getElementById("landmarks-counter").textContent = `${landmarkCount}/168`;
 
@@ -713,7 +715,7 @@ function updateDashboard() {
         let regionVisited = 0;
         
         stateList.forEach(name => {
-            if (travels[name] && !travels[name].unvisited) regionVisited++;
+            if (AppState.travels[name] && !AppState.travels[name].unvisited) regionVisited++;
         });
         
         const regionPercent = Math.round((regionVisited / stateList.length) * 100);
@@ -735,12 +737,12 @@ function updateDashboard() {
 
 // 9. Inspect State Details
 function selectState(stateName) {
-    selectedState = stateName;
+    AppState.selectedState = stateName;
     
     // Rerender checklists to highlight active choice
     renderLedger();
     
-    const config = travels[stateName];
+    const config = AppState.travels[stateName];
     if (!config) return;
     
     document.getElementById("inspector-placeholder").classList.add("hidden");
@@ -786,17 +788,17 @@ function selectState(stateName) {
 }
 
 function toggleStateStatus(stateName) {
-    if (!travels[stateName]) return;
-    travels[stateName].unvisited = !travels[stateName].unvisited;
+    if (!AppState.travels[stateName]) return;
+    AppState.travels[stateName].unvisited = !AppState.travels[stateName].unvisited;
     saveAndRerender();
 }
 
 function saveStateDetails() {
-    if (!selectedState) return;
+    if (!AppState.selectedState) return;
     const memo = document.getElementById("state-memo").value.trim();
-    travels[selectedState].notes = memo;
+    AppState.travels[AppState.selectedState].notes = memo;
     saveAndRerender();
-    showToast("Notes Saved", `Updated general memo details for ${selectedState}`, 'success');
+    showToast("Notes Saved", `Updated general memo details for ${AppState.selectedState}`, 'success');
 }
 
 // 10. Landmarks Checklist Rendering & Operations
@@ -805,7 +807,7 @@ function renderLandmarksChecklist(stateName) {
     listContainer.innerHTML = "";
     
     const stateLandmarks = preloadedLandmarks[stateName] || [];
-    const checkedSet = new Set(travels[stateName]?.landmarks || []);
+    const checkedSet = new Set(AppState.travels[stateName]?.landmarks || []);
     
     stateLandmarks.forEach(landmark => {
         const isChecked = checkedSet.has(landmark);
@@ -824,7 +826,7 @@ function renderLandmarksChecklist(stateName) {
 }
 
 function toggleLandmarkStatus(stateName, landmarkName) {
-    const current = travels[stateName].landmarks || [];
+    const current = AppState.travels[stateName].landmarks || [];
     const index = current.indexOf(landmarkName);
     
     if (index > -1) {
@@ -832,12 +834,12 @@ function toggleLandmarkStatus(stateName, landmarkName) {
     } else {
         current.push(landmarkName);
         // Automatically mark state as visited if you check off a landmark!
-        if (travels[stateName].unvisited) {
-            travels[stateName].unvisited = false;
+        if (AppState.travels[stateName].unvisited) {
+            AppState.travels[stateName].unvisited = false;
         }
     }
     
-    travels[stateName].landmarks = current;
+    AppState.travels[stateName].landmarks = current;
     saveAndRerender();
     selectState(stateName); // Rerender inspector panel
 }
@@ -848,7 +850,7 @@ function renderTripTimeline(stateName) {
     const emptyMsg = document.getElementById("timeline-empty-message");
     listContainer.innerHTML = "";
     
-    const trips = travels[stateName]?.trips || [];
+    const trips = AppState.travels[stateName]?.trips || [];
     
     if (trips.length === 0) {
         emptyMsg.classList.remove("hidden");
@@ -884,8 +886,8 @@ function renderTripTimeline(stateName) {
 }
 
 function deleteTripEntry(stateName, id) {
-    if (!travels[stateName]?.trips) return;
-    travels[stateName].trips = travels[stateName].trips.filter(t => t.id !== id);
+    if (!AppState.travels[stateName]?.trips) return;
+    AppState.travels[stateName].trips = AppState.travels[stateName].trips.filter(t => t.id !== id);
     saveAndRerender();
     selectState(stateName);
     showToast("Trip Removed", "Entry successfully deleted from timeline log.", "info");
@@ -893,7 +895,7 @@ function deleteTripEntry(stateName, id) {
 
 function handleAddTrip(e) {
     e.preventDefault();
-    if (!selectedState) return;
+    if (!AppState.selectedState) return;
     
     const nameInput = document.getElementById("trip-name");
     const dateInput = document.getElementById("trip-date");
@@ -907,21 +909,21 @@ function handleAddTrip(e) {
         notes: '' // Can be supplemented or kept empty
     };
     
-    if (!travels[selectedState].trips) travels[selectedState].trips = [];
-    travels[selectedState].trips.push(newTrip);
+    if (!AppState.travels[AppState.selectedState].trips) AppState.travels[AppState.selectedState].trips = [];
+    AppState.travels[AppState.selectedState].trips.push(newTrip);
     
     // Automatically mark state as visited if you log a trip!
-    if (travels[selectedState].unvisited) {
-        travels[selectedState].unvisited = false;
+    if (AppState.travels[AppState.selectedState].unvisited) {
+        AppState.travels[AppState.selectedState].unvisited = false;
     }
     
     saveAndRerender();
-    selectState(selectedState);
+    selectState(AppState.selectedState);
     
     // Reset form fields
     nameInput.value = "";
     dateInput.value = "";
-    showToast("Trip Logged", `Successfully added new entry to ${selectedState}!`, "success");
+    showToast("Trip Logged", `Successfully added new entry to ${AppState.selectedState}!`, "success");
 }
 
 function formatMonthYear(ymString) {
@@ -934,7 +936,7 @@ function formatMonthYear(ymString) {
 // 12. Global Commands & Theme Switching
 function toggleMapTheme(themeName) {
     if (!themes[themeName]) return;
-    activeTheme = themeName;
+    AppState.activeTheme = themeName;
     
     // Set theme classes on body
     document.body.className = `theme-${themeName}`;
@@ -953,18 +955,18 @@ function toggleMapTheme(themeName) {
 }
 
 function bulkMarkAll(toVisited) {
-    Object.keys(travels).forEach(name => {
-        travels[name].unvisited = !toVisited;
+    Object.keys(AppState.travels).forEach(name => {
+        AppState.travels[name].unvisited = !toVisited;
         if (!toVisited) {
             // Reset notes & logs on wipe
-            travels[name].notes = "";
-            travels[name].date = "";
-            travels[name].trips = [];
-            travels[name].landmarks = [];
+            AppState.travels[name].notes = "";
+            AppState.travels[name].date = "";
+            AppState.travels[name].trips = [];
+            AppState.travels[name].landmarks = [];
         }
     });
     saveAndRerender();
-    if (selectedState) selectState(selectedState);
+    if (AppState.selectedState) selectState(AppState.selectedState);
     showToast("Bulk Operations", toVisited ? "All states marked visited!" : "Tracker successfully reset to blank state.", "success");
 }
 
@@ -978,14 +980,14 @@ function saveAndRerender() {
 // 13. File Backup, Restoring, and CSV/PDF Exporters
 function downloadBackup() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
-        travelerName: travelerName,
-        travels: travels,
-        activeTheme: activeTheme
+        travelerName: AppState.travelerName,
+        travels: AppState.travels,
+        activeTheme: AppState.activeTheme
     }));
     
     const dlAnchorElem = document.createElement('a');
     dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", `us_travels_backup_${travelerName.toLowerCase().replace(/\s+/g, '_')}.json`);
+    dlAnchorElem.setAttribute("download", `us_travels_backup_${AppState.travelerName.toLowerCase().replace(/\s+/g, '_')}.json`);
     dlAnchorElem.click();
     showToast("Backup Created", "Offline JSON backup downloaded successfully.", "success");
 }
@@ -1009,7 +1011,7 @@ function restoreDataFromFile(file) {
                 // Merge import schema safely
                 Object.keys(initialTravelData).forEach(state => {
                     if (imported.travels[state]) {
-                        travels[state] = {
+                        AppState.travels[state] = {
                             unvisited: imported.travels[state].unvisited !== undefined ? imported.travels[state].unvisited : true,
                             notes: imported.travels[state].notes || "",
                             date: imported.travels[state].date || "",
@@ -1019,15 +1021,15 @@ function restoreDataFromFile(file) {
                     }
                 });
                 
-                travelerName = imported.travelerName || 'My';
-                activeTheme = imported.activeTheme || 'classic';
+                AppState.travelerName = imported.travelerName || 'My';
+                AppState.activeTheme = imported.activeTheme || 'classic';
                 
-                document.getElementById("traveler-name-input").value = travelerName;
-                toggleMapTheme(activeTheme);
+                document.getElementById("traveler-name-input").value = AppState.travelerName;
+                toggleMapTheme(AppState.activeTheme);
                 saveAndRerender();
                 
-                if (selectedState) selectState(selectedState);
-                showToast("Import Success", `Successfully loaded records for ${travelerName}'s map!`, "success");
+                if (AppState.selectedState) selectState(AppState.selectedState);
+                showToast("Import Success", `Successfully loaded records for ${AppState.travelerName}'s map!`, "success");
             } else {
                 showToast("Invalid Structure", "Imported file does not contain compatible travel tracker states.", "error");
             }
@@ -1043,8 +1045,8 @@ function exportToCSV() {
     // CSV Header
     csvContent += "State Name,Status,General Notes,Checked Landmarks Count,Total Trips Logged,Trip Details\r\n";
     
-    Object.keys(travels).sort().forEach(stateName => {
-        const item = travels[stateName];
+    Object.keys(AppState.travels).sort().forEach(stateName => {
+        const item = AppState.travels[stateName];
         const statusText = item.unvisited ? "Bucket List" : "Visited";
         const cleanNotes = (item.notes || "").replace(/"/g, '""');
         const checkedLandmarks = (item.landmarks || []).length;
@@ -1058,7 +1060,7 @@ function exportToCSV() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `us_travel_statistics_${travelerName.toLowerCase().replace(/\s+/g, '_')}.csv`);
+    link.setAttribute("download", `us_travel_statistics_${AppState.travelerName.toLowerCase().replace(/\s+/g, '_')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1094,7 +1096,7 @@ function setupDragAndDrop() {
 
 // 15. Cloud Synced Operations & Deep Links
 async function saveToCloud() {
-    if (!firebaseReady) {
+    if (!AppState.firebaseReady) {
         showToast("Local Only", "Synchronization configuration is not configured. Saving strictly offline.", "info");
         return;
     }
@@ -1105,14 +1107,14 @@ async function saveToCloud() {
     btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Syncing...`;
     
     try {
-        if (!currentSyncCode) {
-            currentSyncCode = 'MAP-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        if (!AppState.currentSyncCode) {
+            AppState.currentSyncCode = 'MAP-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         }
         
         const payload = {
-            travelerName: travelerName,
-            travels: travels,
-            activeTheme: activeTheme,
+            travelerName: AppState.travelerName,
+            travels: AppState.travels,
+            activeTheme: AppState.activeTheme,
             updatedAt: new Date().toISOString()
         };
         
@@ -1125,11 +1127,11 @@ async function saveToCloud() {
         badge.textContent = "Synced to Cloud";
         badge.className = "sync-badge synced";
         
-        document.getElementById("display-sync-code").textContent = currentSyncCode;
+        document.getElementById("display-sync-code").textContent = AppState.currentSyncCode;
         document.getElementById("cloud-info-box").classList.add("hidden");
         document.getElementById("sync-success-box").classList.remove("hidden");
         
-        showToast("Sync Successful", `Backed up to cloud. Code: ${currentSyncCode}`, "success");
+        showToast("Sync Successful", `Backed up to cloud. Code: ${AppState.currentSyncCode}`, "success");
     } catch (e) {
         console.error("Cloud saving failed", e);
         showToast("Cloud Failure", "Could not backup to servers. Running offline instead.", "error");
@@ -1146,7 +1148,7 @@ async function loadFromCloudCode() {
         return;
     }
     
-    if (!firebaseReady) {
+    if (!AppState.firebaseReady) {
         showToast("Local Only", "Cloud database is currently disabled.", "error");
         return;
     }
@@ -1157,7 +1159,7 @@ async function loadFromCloudCode() {
             // Merge import schema safely
             Object.keys(initialTravelData).forEach(state => {
                 if (data.travels[state]) {
-                    travels[state] = {
+                    AppState.travels[state] = {
                         unvisited: data.travels[state].unvisited !== undefined ? data.travels[state].unvisited : true,
                         notes: data.travels[state].notes || "",
                         date: data.travels[state].date || "",
@@ -1167,17 +1169,17 @@ async function loadFromCloudCode() {
                 }
             });
             
-            travelerName = data.travelerName || 'My';
-            activeTheme = data.activeTheme || 'classic';
-            currentSyncCode = rawCode;
+            AppState.travelerName = data.travelerName || 'My';
+            AppState.activeTheme = data.activeTheme || 'classic';
+            AppState.currentSyncCode = rawCode;
             
-            document.getElementById("traveler-name-input").value = travelerName;
-            toggleMapTheme(activeTheme);
+            document.getElementById("traveler-name-input").value = AppState.travelerName;
+            toggleMapTheme(AppState.activeTheme);
             saveAndRerender();
             
-            if (selectedState) selectState(selectedState);
+            if (AppState.selectedState) selectState(AppState.selectedState);
             
-            document.getElementById("display-sync-code").textContent = currentSyncCode;
+            document.getElementById("display-sync-code").textContent = AppState.currentSyncCode;
             document.getElementById("cloud-info-box").classList.add("hidden");
             document.getElementById("sync-success-box").classList.remove("hidden");
             
@@ -1185,7 +1187,7 @@ async function loadFromCloudCode() {
             badge.textContent = "Synced to Cloud";
             badge.className = "sync-badge synced";
             
-            showToast("Cloud Load Complete", `Imported records for ${travelerName}'s adventure!`, "success");
+            showToast("Cloud Load Complete", `Imported records for ${AppState.travelerName}'s adventure!`, "success");
         } else {
             showToast("Code Not Found", "No map configuration exists with that sync code.", "error");
         }
@@ -1196,7 +1198,7 @@ async function loadFromCloudCode() {
 }
 
 function copySyncLink() {
-    const shareUrl = `${window.location.origin}${window.location.pathname}?mapId=${currentSyncCode}`;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?mapId=${AppState.currentSyncCode}`;
     const tempInput = document.createElement("input");
     tempInput.value = shareUrl;
     document.body.appendChild(tempInput);
@@ -1214,7 +1216,7 @@ function resetSyncView() {
 async function checkSyncQueryParam() {
     const urlParams = new URLSearchParams(window.location.search);
     const urlMapId = urlParams.get('mapId');
-    if (urlMapId && firebaseReady) {
+    if (urlMapId && AppState.firebaseReady) {
         document.getElementById("sync-code-input").value = urlMapId;
         await loadFromCloudCode();
     }
@@ -1231,9 +1233,9 @@ function setupEvents() {
     document.getElementById("traveler-name-input").addEventListener("change", function(e) {
         let val = e.target.value.trim();
         if (!val) val = 'My';
-        travelerName = val;
+        AppState.travelerName = val;
         saveLocalStorage();
-        showToast("Name Updated", `Personalized map for: ${travelerName}`, "success");
+        showToast("Name Updated", `Personalized map for: ${AppState.travelerName}`, "success");
     });
 }
 
@@ -1262,5 +1264,5 @@ window.onload = function() {
     setupDragAndDrop();
     initMap();
     initFirebase();
-    toggleMapTheme(activeTheme);
+    toggleMapTheme(AppState.activeTheme);
 };

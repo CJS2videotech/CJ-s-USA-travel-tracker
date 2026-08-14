@@ -674,9 +674,10 @@ function updateDashboard() {
     const totalStates = 50; // Standard US states for percentage explored
     
     // Count visited states (unvisited === false) excluding territories
+    const territoriesSet = new Set(regions.Territories);
     Object.keys(travels).forEach(name => {
         // Exclude territories from standard 50 count percentage
-        if (!regions.Territories.includes(name)) {
+        if (!territoriesSet.has(name)) {
             if (!travels[name].unvisited) visitedCount++;
         }
     });

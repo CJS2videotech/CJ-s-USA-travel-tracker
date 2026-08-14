@@ -1264,3 +1264,14 @@ window.onload = function() {
     initFirebase();
     toggleMapTheme(activeTheme);
 };
+
+// Export functions for testing
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        initMap,
+        renderMap,
+        updateDashboard,
+        renderLedger,
+        selectState
+    };
+}

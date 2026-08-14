@@ -260,7 +260,7 @@ let travelerName = 'My';
 let selectedState = null;
 let activeTheme = 'classic';
 let currentSyncCode = '';
-let firebaseReady = false;
+window.firebaseReady = false; // Expose to window for testing
 let db = null;
 let auth = null;
 
@@ -362,7 +362,7 @@ async function initFirebase() {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-            firebaseReady = true;
+            window.firebaseReady = true;
             
             // Sync status badge update
             const badge = document.getElementById("sync-status-badge");
@@ -1094,7 +1094,7 @@ function setupDragAndDrop() {
 
 // 15. Cloud Synced Operations & Deep Links
 async function saveToCloud() {
-    if (!firebaseReady) {
+    if (!window.firebaseReady) {
         showToast("Local Only", "Synchronization configuration is not configured. Saving strictly offline.", "info");
         return;
     }
@@ -1146,7 +1146,7 @@ async function loadFromCloudCode() {
         return;
     }
     
-    if (!firebaseReady) {
+    if (!window.firebaseReady) {
         showToast("Local Only", "Cloud database is currently disabled.", "error");
         return;
     }
@@ -1214,7 +1214,7 @@ function resetSyncView() {
 async function checkSyncQueryParam() {
     const urlParams = new URLSearchParams(window.location.search);
     const urlMapId = urlParams.get('mapId');
-    if (urlMapId && firebaseReady) {
+    if (urlMapId && window.firebaseReady) {
         document.getElementById("sync-code-input").value = urlMapId;
         await loadFromCloudCode();
     }

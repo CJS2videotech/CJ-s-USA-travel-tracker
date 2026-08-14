@@ -940,7 +940,7 @@ function toggleMapTheme(themeName) {
     document.body.className = `theme-${themeName}`;
     
     // Set active status on picker buttons
-    ['classic', 'vintage', 'cyber', 'aurora'].forEach(name => {
+    Object.keys(themes).forEach(name => {
         const btn = document.getElementById(`theme-${name}`);
         if (btn) {
             if (name === themeName) btn.classList.add("active");

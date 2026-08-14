@@ -262,7 +262,6 @@ let activeTheme = 'classic';
 let currentSyncCode = '';
 let firebaseReady = false;
 let db = null;
-let auth = null;
 
 const appId = 'us-travel-tracker';
 
@@ -356,41 +355,26 @@ async function initFirebase() {
             
             // Dynamic ESM imports
             const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-            const { getAuth, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
             const { getFirestore, doc, setDoc, getDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
             
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            auth = getAuth(app);
             firebaseReady = true;
             
             // Sync status badge update
             const badge = document.getElementById("sync-status-badge");
-            badge.textContent = currentSyncCode ? "Cloud Active" : "Cloud Ready";
-            badge.className = "sync-badge synced";
+            if (badge) {
+                badge.textContent = currentSyncCode ? "Cloud Active" : "Cloud Ready";
+                badge.className = "sync-badge synced";
+            }
 
             // Expose sync operations globally
             window.firebaseSaveToCloud = async (payload) => {
-                let userCreds;
-                const token = window.__initial_auth_token || window.initialAuthTokenGlobal;
-                if (token) {
-                    userCreds = await signInWithCustomToken(auth, token);
-                } else {
-                    userCreds = await signInAnonymously(auth);
-                }
-                if (!userCreds.user) throw new Error("Anonymous auth failed");
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'maps', currentSyncCode);
                 await setDoc(docRef, payload);
             };
 
             window.firebaseLoadFromCloud = async (code) => {
-                let userCreds;
-                const token = window.__initial_auth_token || window.initialAuthTokenGlobal;
-                if (token) {
-                    userCreds = await signInWithCustomToken(auth, token);
-                } else {
-                    userCreds = await signInAnonymously(auth);
-                }
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'maps', code);
                 const docSnap = await getDoc(docRef);
                 return docSnap.exists() ? docSnap.data() : null;
@@ -1122,8 +1106,10 @@ async function saveToCloud() {
         
         // Update badge UI
         const badge = document.getElementById("sync-status-badge");
-        badge.textContent = "Synced to Cloud";
-        badge.className = "sync-badge synced";
+        if (badge) {
+            badge.textContent = "Synced to Cloud";
+            badge.className = "sync-badge synced";
+        }
         
         document.getElementById("display-sync-code").textContent = currentSyncCode;
         document.getElementById("cloud-info-box").classList.add("hidden");
@@ -1182,8 +1168,10 @@ async function loadFromCloudCode() {
             document.getElementById("sync-success-box").classList.remove("hidden");
             
             const badge = document.getElementById("sync-status-badge");
-            badge.textContent = "Synced to Cloud";
-            badge.className = "sync-badge synced";
+            if (badge) {
+                badge.textContent = "Synced to Cloud";
+                badge.className = "sync-badge synced";
+            }
             
             showToast("Cloud Load Complete", `Imported records for ${travelerName}'s adventure!`, "success");
         } else {

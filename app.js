@@ -613,6 +613,7 @@ function renderLedger() {
     
     const sortedStates = Object.keys(travels).sort();
     let renderCount = 0;
+    const fragment = document.createDocumentFragment();
     
     sortedStates.forEach(name => {
         const item = travels[name];
@@ -654,9 +655,11 @@ function renderLedger() {
                 ${item.unvisited ? 'Bucket' : 'Visited'}
             </span>
         `;
-        container.appendChild(stateRow);
+        fragment.appendChild(stateRow);
     });
     
+    container.appendChild(fragment);
+
     ledgerCount.textContent = `${renderCount} States`;
     
     if (renderCount === 0) {

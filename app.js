@@ -1264,3 +1264,14 @@ window.onload = function() {
     initFirebase();
     toggleMapTheme(activeTheme);
 };
+
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = {
+        toggleLandmarkStatus,
+        travels,
+        setTravels: (newTravels) => travels = newTravels,
+        initialTravelData,
+        saveAndRerender,
+        selectState
+    };
+}

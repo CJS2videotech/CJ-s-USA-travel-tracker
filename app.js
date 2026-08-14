@@ -267,19 +267,22 @@ let auth = null;
 const appId = 'us-travel-tracker';
 
 // D3 Global Variables
-const svg = d3.select("#us-svg-map");
-const g = svg.append("g");
-const projection = d3.geoAlbersUsa().scale(1075).translate([480, 300]);
-const path = d3.geoPath().projection(projection);
-let usMapData = null;
+let svg, g, projection, path, zoom, usMapData = null;
 
-// Zoom configuration
-const zoom = d3.zoom()
-    .scaleExtent([1, 8])
-    .on("zoom", (event) => {
-        g.attr("transform", event.transform);
-    });
-svg.call(zoom);
+if (typeof d3 !== 'undefined') {
+    svg = d3.select("#us-svg-map");
+    g = svg.append("g");
+    projection = d3.geoAlbersUsa().scale(1075).translate([480, 300]);
+    path = d3.geoPath().projection(projection);
+
+    // Zoom configuration
+    zoom = d3.zoom()
+        .scaleExtent([1, 8])
+        .on("zoom", (event) => {
+            g.attr("transform", event.transform);
+        });
+    svg.call(zoom);
+}
 
 // 3. Load & Cache Functions
 function loadLocalStorage() {
@@ -925,10 +928,15 @@ function handleAddTrip(e) {
 }
 
 function formatMonthYear(ymString) {
-    if (!ymString) return "";
-    const [year, month] = ymString.split('-');
+    if (!ymString || typeof ymString !== 'string') return "";
+    const parts = ymString.split('-');
+    if (parts.length !== 2) return ymString;
+    const [year, month] = parts;
+    const monthInt = parseInt(month, 10);
+    if (isNaN(monthInt) || monthInt < 1 || monthInt > 12) return ymString;
+
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${months[parseInt(month, 10) - 1]} ${year}`;
+    return `${months[monthInt - 1]} ${year}`;
 }
 
 // 12. Global Commands & Theme Switching
@@ -1238,29 +1246,35 @@ function setupEvents() {
 }
 
 // Expose visual operations to window scope for HTML bindings
-window.toggleMapTheme = toggleMapTheme;
-window.toggleStateStatus = toggleStateStatus;
-window.selectState = selectState;
-window.saveStateDetails = saveStateDetails;
-window.bulkMarkAll = bulkMarkAll;
-window.saveToCloud = saveToCloud;
-window.loadFromCloudCode = loadFromCloudCode;
-window.downloadBackup = downloadBackup;
-window.triggerFileInput = triggerFileInput;
-window.copySyncLink = copySyncLink;
-window.resetSyncView = resetSyncView;
-window.exportToCSV = exportToCSV;
-window.zoomInMap = zoomInMap;
-window.zoomOutMap = zoomOutMap;
-window.resetMapZoom = resetMapZoom;
-window.deleteTripEntry = deleteTripEntry;
+if (typeof window !== 'undefined') {
+    window.toggleMapTheme = toggleMapTheme;
+    window.toggleStateStatus = toggleStateStatus;
+    window.selectState = selectState;
+    window.saveStateDetails = saveStateDetails;
+    window.bulkMarkAll = bulkMarkAll;
+    window.saveToCloud = saveToCloud;
+    window.loadFromCloudCode = loadFromCloudCode;
+    window.downloadBackup = downloadBackup;
+    window.triggerFileInput = triggerFileInput;
+    window.copySyncLink = copySyncLink;
+    window.resetSyncView = resetSyncView;
+    window.exportToCSV = exportToCSV;
+    window.zoomInMap = zoomInMap;
+    window.zoomOutMap = zoomOutMap;
+    window.resetMapZoom = resetMapZoom;
+    window.deleteTripEntry = deleteTripEntry;
 
-// Bootstrapping
-window.onload = function() {
-    loadLocalStorage();
-    setupEvents();
-    setupDragAndDrop();
-    initMap();
-    initFirebase();
-    toggleMapTheme(activeTheme);
-};
+    // Bootstrapping
+    window.onload = function() {
+        loadLocalStorage();
+        setupEvents();
+        setupDragAndDrop();
+        initMap();
+        initFirebase();
+        toggleMapTheme(activeTheme);
+    };
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { formatMonthYear };
+}

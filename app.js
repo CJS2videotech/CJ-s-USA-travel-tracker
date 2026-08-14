@@ -1100,9 +1100,11 @@ async function saveToCloud() {
     }
     
     const btn = document.getElementById("btn-cloud-sync");
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Syncing...`;
+    const originalText = btn ? btn.innerHTML : "";
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Syncing...`;
+    }
     
     try {
         if (!currentSyncCode) {
@@ -1122,20 +1124,29 @@ async function saveToCloud() {
         
         // Update badge UI
         const badge = document.getElementById("sync-status-badge");
-        badge.textContent = "Synced to Cloud";
-        badge.className = "sync-badge synced";
+        if (badge) {
+            badge.textContent = "Synced to Cloud";
+            badge.className = "sync-badge synced";
+        }
         
-        document.getElementById("display-sync-code").textContent = currentSyncCode;
-        document.getElementById("cloud-info-box").classList.add("hidden");
-        document.getElementById("sync-success-box").classList.remove("hidden");
+        const displaySyncCode = document.getElementById("display-sync-code");
+        if (displaySyncCode) displaySyncCode.textContent = currentSyncCode;
+
+        const cloudInfoBox = document.getElementById("cloud-info-box");
+        if (cloudInfoBox) cloudInfoBox.classList.add("hidden");
+
+        const syncSuccessBox = document.getElementById("sync-success-box");
+        if (syncSuccessBox) syncSuccessBox.classList.remove("hidden");
         
         showToast("Sync Successful", `Backed up to cloud. Code: ${currentSyncCode}`, "success");
     } catch (e) {
         console.error("Cloud saving failed", e);
         showToast("Cloud Failure", "Could not backup to servers. Running offline instead.", "error");
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
     }
 }
 

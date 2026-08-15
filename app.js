@@ -671,13 +671,19 @@ function renderLedger() {
 // 8. Update Dashboard Header Progress Metrics & Sidebar Region Bars
 function updateDashboard() {
     let visitedCount = 0;
+    let landmarkCount = 0;
     const totalStates = 50; // Standard US states for percentage explored
     
     // Count visited states (unvisited === false) excluding territories
+    // and count checked landmarks globally
     Object.keys(travels).forEach(name => {
         // Exclude territories from standard 50 count percentage
         if (!regions.Territories.includes(name)) {
             if (!travels[name].unvisited) visitedCount++;
+        }
+
+        if (travels[name].landmarks) {
+            landmarkCount += travels[name].landmarks.length;
         }
     });
     
@@ -697,11 +703,6 @@ function updateDashboard() {
     const offset = circumference - (percent / 100) * circumference;
     ring.style.strokeDashoffset = offset;
     
-    // Count checked landmarks globally
-    let landmarkCount = 0;
-    Object.keys(travels).forEach(name => {
-        if (travels[name].landmarks) landmarkCount += travels[name].landmarks.length;
-    });
     document.getElementById("landmarks-counter").textContent = `${landmarkCount}/168`;
 
     // Recalculate regional progress bars

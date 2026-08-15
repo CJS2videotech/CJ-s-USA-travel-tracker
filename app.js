@@ -1047,6 +1047,7 @@ function exportToCSV() {
     // CSV Header
     csvContent += "State Name,Status,General Notes,Checked Landmarks Count,Total Trips Logged,Trip Details\r\n";
     
+    const csvRows = [];
     Object.keys(travels).sort().forEach(stateName => {
         const item = travels[stateName];
         const statusText = item.unvisited ? "Bucket List" : "Visited";
@@ -1056,9 +1057,11 @@ function exportToCSV() {
         const trips = item.trips || [];
         const tripDetailsStr = trips.map(t => `${t.name} (${formatMonthYear(t.date)}) [${t.type}]`).join(" | ").replace(/"/g, '""');
         
-        csvContent += `"${stateName}","${statusText}","${cleanNotes}",${checkedLandmarks},${trips.length},"${tripDetailsStr}"\r\n`;
+        csvRows.push(`"${stateName}","${statusText}","${cleanNotes}",${checkedLandmarks},${trips.length},"${tripDetailsStr}"`);
     });
     
+    csvContent += csvRows.join("\r\n") + "\r\n";
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);

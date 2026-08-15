@@ -1202,6 +1202,25 @@ async function loadFromCloudCode() {
     }
 }
 
+
+function copyShareableLink() {
+    const payload = JSON.stringify({
+        travelerName: travelerName,
+        travels: travels,
+        activeTheme: activeTheme
+    });
+    const encodedData = btoa(encodeURIComponent(payload));
+    const shareUrl = `${window.location.origin}${window.location.pathname}?data=${encodedData}`;
+
+    const tempInput = document.createElement("input");
+    tempInput.value = shareUrl;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempInput);
+    showToast("Link Copied", "Shareable URL copied to clipboard!", "success");
+}
+
 function copySyncLink() {
     const shareUrl = `${window.location.origin}${window.location.pathname}?mapId=${currentSyncCode}`;
     const tempInput = document.createElement("input");
@@ -1216,6 +1235,50 @@ function copySyncLink() {
 function resetSyncView() {
     document.getElementById("sync-success-box").classList.add("hidden");
     document.getElementById("cloud-info-box").classList.remove("hidden");
+}
+
+
+function checkDataQueryParam() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dataParam = urlParams.get('data');
+    if (dataParam) {
+        try {
+            const decodedData = decodeURIComponent(atob(dataParam));
+            const imported = JSON.parse(decodedData);
+            if (imported.travels) {
+                // Merge import schema safely
+                Object.keys(initialTravelData).forEach(state => {
+                    if (imported.travels[state]) {
+                        travels[state] = {
+                            unvisited: imported.travels[state].unvisited !== undefined ? imported.travels[state].unvisited : true,
+                            notes: imported.travels[state].notes || "",
+                            date: imported.travels[state].date || "",
+                            trips: imported.travels[state].trips || [],
+                            landmarks: imported.travels[state].landmarks || []
+                        };
+                    }
+                });
+
+                travelerName = imported.travelerName || 'My';
+                activeTheme = imported.activeTheme || 'classic';
+
+                const nameInput = document.getElementById("traveler-name-input");
+                if (nameInput) nameInput.value = travelerName;
+                toggleMapTheme(activeTheme);
+                saveAndRerender();
+
+                if (selectedState) selectState(selectedState);
+
+                // Clear the URL parameter so refreshing doesn't keep reloading it
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                showToast("Import Success", `Successfully loaded shared map for ${travelerName}!`, "success");
+            }
+        } catch (e) {
+            console.error("Failed to parse data URL parameter", e);
+            showToast("Import Failed", "The shared link is invalid or corrupted.", "error");
+        }
+    }
 }
 
 async function checkSyncQueryParam() {
@@ -1255,6 +1318,7 @@ window.loadFromCloudCode = loadFromCloudCode;
 window.downloadBackup = downloadBackup;
 window.triggerFileInput = triggerFileInput;
 window.copySyncLink = copySyncLink;
+window.copyShareableLink = copyShareableLink;
 window.resetSyncView = resetSyncView;
 window.exportToCSV = exportToCSV;
 window.zoomInMap = zoomInMap;
@@ -1269,5 +1333,6 @@ window.onload = function() {
     setupDragAndDrop();
     initMap();
     initFirebase();
+    checkDataQueryParam();
     toggleMapTheme(activeTheme);
 };

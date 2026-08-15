@@ -928,11 +928,11 @@ function handleAddTrip(e) {
     showToast("Trip Logged", `Successfully added new entry to ${selectedState}!`, "success");
 }
 
+const formatMonthsArray = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function formatMonthYear(ymString) {
     if (!ymString) return "";
     const [year, month] = ymString.split('-');
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${months[parseInt(month, 10) - 1]} ${year}`;
+    return `${formatMonthsArray[parseInt(month, 10) - 1]} ${year}`;
 }
 
 // 12. Global Commands & Theme Switching

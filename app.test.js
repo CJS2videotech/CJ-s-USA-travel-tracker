@@ -210,4 +210,30 @@ describe("App Tests", () => {
         window.resetMapZoom();
         expect(global.d3.select().transition().duration().call).toHaveBeenCalled();
     });
+
+    test("should toggle landmark status and update visited status", () => {
+        window.selectState("California");
+
+        // Add a landmark
+        window.toggleLandmarkStatus("California", "Golden Gate Bridge");
+
+        let updatedTravels = JSON.parse(localStorage.getItem('us_travel_data_map'));
+        expect(updatedTravels["California"].landmarks).toContain("Golden Gate Bridge");
+        expect(updatedTravels["California"].unvisited).toBe(false);
+
+        // Add another landmark
+        window.toggleLandmarkStatus("California", "Yosemite");
+        updatedTravels = JSON.parse(localStorage.getItem('us_travel_data_map'));
+        expect(updatedTravels["California"].landmarks).toContain("Golden Gate Bridge");
+        expect(updatedTravels["California"].landmarks).toContain("Yosemite");
+
+        // Remove the first landmark
+        window.toggleLandmarkStatus("California", "Golden Gate Bridge");
+
+        updatedTravels = JSON.parse(localStorage.getItem('us_travel_data_map'));
+        expect(updatedTravels["California"].landmarks).not.toContain("Golden Gate Bridge");
+        expect(updatedTravels["California"].landmarks).toContain("Yosemite");
+        // unvisited should still be false because we don't automatically mark it back
+        expect(updatedTravels["California"].unvisited).toBe(false);
+    });
 });

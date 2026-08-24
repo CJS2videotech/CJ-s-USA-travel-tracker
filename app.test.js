@@ -210,4 +210,32 @@ describe("App Tests", () => {
         window.resetMapZoom();
         expect(global.d3.select().transition().duration().call).toHaveBeenCalled();
     });
+
+    test("should export CSV correctly", () => {
+        const mockAnchor = {
+            setAttribute: jest.fn(),
+            click: jest.fn(),
+        };
+        const originalCreateElement = document.createElement.bind(document);
+        jest.spyOn(document, 'createElement').mockImplementation((tagName) => {
+            if (tagName === 'a') {
+                return mockAnchor;
+            }
+            return originalCreateElement(tagName);
+        });
+
+        const mockAppendChild = jest.spyOn(document.body, 'appendChild').mockImplementation(() => {});
+        const mockRemoveChild = jest.spyOn(document.body, 'removeChild').mockImplementation(() => {});
+
+        window.exportToCSV();
+
+        expect(document.createElement).toHaveBeenCalledWith('a');
+        expect(mockAnchor.setAttribute).toHaveBeenCalledWith('href', expect.stringContaining('data:text/csv;charset=utf-8,'));
+        expect(mockAnchor.setAttribute).toHaveBeenCalledWith('download', expect.stringContaining('us_travel_statistics_'));
+        expect(mockAppendChild).toHaveBeenCalledWith(mockAnchor);
+        expect(mockAnchor.click).toHaveBeenCalled();
+        expect(mockRemoveChild).toHaveBeenCalledWith(mockAnchor);
+
+        jest.restoreAllMocks();
+    });
 });

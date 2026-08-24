@@ -281,6 +281,17 @@ const zoom = d3.zoom()
     });
 svg.call(zoom);
 
+// Security Utilities
+function escapeHTML(str) {
+    if (typeof str !== 'string') return str;
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // 3. Load & Cache Functions
 function loadLocalStorage() {
     try {
@@ -637,7 +648,7 @@ function renderLedger() {
         let badgeHTML = '';
         if (checkedCount > 0) badgeHTML += `<span class="state-notes-badge"><i class="fa-solid fa-monument"></i> ${checkedCount} </span>`;
         if (tripsCount > 0) badgeHTML += `<span class="state-notes-badge"><i class="fa-solid fa-route"></i> ${tripsCount} </span>`;
-        if (item.notes && checkedCount === 0 && tripsCount === 0) badgeHTML += `<span class="state-notes-badge italic">"${item.notes}"</span>`;
+        if (item.notes && checkedCount === 0 && tripsCount === 0) badgeHTML += `<span class="state-notes-badge italic">"${escapeHTML(item.notes)}"</span>`;
         
         stateRow.innerHTML = `
             <div class="state-row-left">
@@ -870,7 +881,7 @@ function renderTripTimeline(stateName) {
             <div class="timeline-node"></div>
             <div class="timeline-content">
                 <div class="timeline-hdr-row">
-                    <span class="timeline-entry-title">${trip.name}</span>
+                    <span class="timeline-entry-title">${escapeHTML(trip.name)}</span>
                     <button class="btn-delete-trip" onclick="deleteTripEntry('${stateName}', '${trip.id}')" title="Delete entry">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
@@ -878,9 +889,9 @@ function renderTripTimeline(stateName) {
                 <div class="timeline-meta-row">
                     <span>${formatMonthYear(trip.date)}</span>
                     <span>•</span>
-                    <span class="timeline-type-badge">${trip.type}</span>
+                    <span class="timeline-type-badge">${escapeHTML(trip.type)}</span>
                 </div>
-                ${trip.notes ? `<p class="timeline-desc">${trip.notes}</p>` : ''}
+                ${trip.notes ? `<p class="timeline-desc">${escapeHTML(trip.notes)}</p>` : ''}
             </div>
         `;
         listContainer.appendChild(item);
@@ -1325,6 +1336,9 @@ window.zoomInMap = zoomInMap;
 window.zoomOutMap = zoomOutMap;
 window.resetMapZoom = resetMapZoom;
 window.deleteTripEntry = deleteTripEntry;
+if (typeof module !== 'undefined' && module.exports) {
+    window.escapeHTML = escapeHTML; // expose for testing if needed
+}
 
 // Bootstrapping
 window.onload = function() {

@@ -254,6 +254,31 @@ const themes = {
     }
 };
 
+function escapeHTML(str) {
+    if (typeof str !== 'string') return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function sanitizeImportData(data) {
+    if (typeof data === 'string') {
+        return escapeHTML(data);
+    } else if (Array.isArray(data)) {
+        return data.map(item => sanitizeImportData(item));
+    } else if (typeof data === 'object' && data !== null) {
+        const sanitized = {};
+        for (const key in data) {
+            sanitized[key] = sanitizeImportData(data[key]);
+        }
+        return sanitized;
+    }
+    return data;
+}
+
 // 2. Active Application State
 let travels = initialTravelData;
 let travelerName = 'My';
@@ -1008,7 +1033,8 @@ function restoreDataFromFile(file) {
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            const imported = JSON.parse(e.target.result);
+            let imported = JSON.parse(e.target.result);
+            imported = sanitizeImportData(imported);
             if (imported.travels) {
                 // Merge import schema safely
                 Object.keys(initialTravelData).forEach(state => {
@@ -1159,8 +1185,9 @@ async function loadFromCloudCode() {
     }
     
     try {
-        const data = await window.firebaseLoadFromCloud(rawCode);
+        let data = await window.firebaseLoadFromCloud(rawCode);
         if (data) {
+            data = sanitizeImportData(data);
             // Merge import schema safely
             Object.keys(initialTravelData).forEach(state => {
                 if (data.travels[state]) {
@@ -1244,7 +1271,8 @@ function checkDataQueryParam() {
     if (dataParam) {
         try {
             const decodedData = decodeURIComponent(atob(dataParam));
-            const imported = JSON.parse(decodedData);
+            let imported = JSON.parse(decodedData);
+            imported = sanitizeImportData(imported);
             if (imported.travels) {
                 // Merge import schema safely
                 Object.keys(initialTravelData).forEach(state => {

@@ -272,6 +272,7 @@ const g = svg.append("g");
 const projection = d3.geoAlbersUsa().scale(1075).translate([480, 300]);
 const path = d3.geoPath().projection(projection);
 let usMapData = null;
+let statesGeoCache = null;
 
 // Zoom configuration
 const zoom = d3.zoom()
@@ -446,11 +447,13 @@ function renderMap() {
     g.selectAll("*").remove();
     d3.select("#map-parent").style("background-color", themes[activeTheme].ocean);
     
-    const statesGeo = topojson.feature(usMapData, usMapData.objects.states).features;
+    if (!statesGeoCache) {
+        statesGeoCache = topojson.feature(usMapData, usMapData.objects.states).features;
+    }
     
     // 1. Draw States
     g.selectAll("path")
-        .data(statesGeo)
+        .data(statesGeoCache)
         .join("path")
         .attr("d", path)
         .attr("class", "state-path")
@@ -514,7 +517,7 @@ function renderMap() {
         `);
 
     // 3. Render Orange Pin Markers for unvisited states
-    statesGeo.forEach(d => {
+    statesGeoCache.forEach(d => {
         const stateName = fipsToState[d.id];
         if (!stateName || !travels[stateName]?.unvisited) return;
         
@@ -588,8 +591,11 @@ function resetMapZoom() {
 
 function zoomToState(stateName) {
     if (!usMapData) return;
-    const statesGeo = topojson.feature(usMapData, usMapData.objects.states).features;
-    const feature = statesGeo.find(d => fipsToState[d.id] === stateName);
+
+    if (!statesGeoCache) {
+        statesGeoCache = topojson.feature(usMapData, usMapData.objects.states).features;
+    }
+    const feature = statesGeoCache.find(d => fipsToState[d.id] === stateName);
     
     if (feature) {
         const centroid = path.centroid(feature);

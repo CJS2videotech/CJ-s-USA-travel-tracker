@@ -210,4 +210,23 @@ describe("App Tests", () => {
         window.resetMapZoom();
         expect(global.d3.select().transition().duration().call).toHaveBeenCalled();
     });
+
+    describe("formatMonthYear", () => {
+        test("should format valid YYYY-MM strings correctly", () => {
+            expect(window.formatMonthYear("2023-01")).toBe("Jan 2023");
+            expect(window.formatMonthYear("2023-12")).toBe("Dec 2023");
+            expect(window.formatMonthYear("1999-05")).toBe("May 1999");
+        });
+
+        test("should return empty string for falsy values", () => {
+            expect(window.formatMonthYear("")).toBe("");
+            expect(window.formatMonthYear(null)).toBe("");
+            expect(window.formatMonthYear(undefined)).toBe("");
+        });
+
+        test("should handle invalid month numbers gracefully", () => {
+            expect(window.formatMonthYear("2023-13")).toBe("undefined 2023");
+            expect(window.formatMonthYear("2023-00")).toBe("undefined 2023");
+        });
+    });
 });

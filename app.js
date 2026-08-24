@@ -1047,15 +1047,21 @@ function exportToCSV() {
     // CSV Header
     csvContent += "State Name,Status,General Notes,Checked Landmarks Count,Total Trips Logged,Trip Details\r\n";
     
+    const preventCsvInjection = (str) => {
+        return /^[=+\-@]/.test(str) ? "'" + str : str;
+    };
+
     const csvRows = [];
     Object.keys(travels).sort().forEach(stateName => {
         const item = travels[stateName];
         const statusText = item.unvisited ? "Bucket List" : "Visited";
-        const cleanNotes = (item.notes || "").replace(/"/g, '""');
+        const notes = item.notes || "";
+        const cleanNotes = preventCsvInjection(notes).replace(/"/g, '""');
         const checkedLandmarks = (item.landmarks || []).length;
         
         const trips = item.trips || [];
-        const tripDetailsStr = trips.map(t => `${t.name} (${formatMonthYear(t.date)}) [${t.type}]`).join(" | ").replace(/"/g, '""');
+        const tripDetailsStrRaw = trips.map(t => `${t.name} (${formatMonthYear(t.date)}) [${t.type}]`).join(" | ");
+        const tripDetailsStr = preventCsvInjection(tripDetailsStrRaw).replace(/"/g, '""');
         
         csvRows.push(`"${stateName}","${statusText}","${cleanNotes}",${checkedLandmarks},${trips.length},"${tripDetailsStr}"`);
     });

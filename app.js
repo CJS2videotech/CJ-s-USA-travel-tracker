@@ -442,15 +442,13 @@ async function initMap() {
 function renderMap() {
     if (!usMapData) return;
     
-    // Clear out D3 group elements
-    g.selectAll("*").remove();
     d3.select("#map-parent").style("background-color", themes[activeTheme].ocean);
     
     const statesGeo = topojson.feature(usMapData, usMapData.objects.states).features;
     
     // 1. Draw States
-    g.selectAll("path")
-        .data(statesGeo)
+    g.selectAll("path.state-path")
+        .data(statesGeo, d => d.id)
         .join("path")
         .attr("d", path)
         .attr("class", "state-path")
@@ -501,62 +499,83 @@ function renderMap() {
         });
 
     // 2. Draw patterns for selected states
-    svg.append("defs")
-        .append("pattern")
-        .attr("id", "selected-stripe-pattern")
-        .attr("width", 8)
-        .attr("height", 8)
-        .attr("patternUnits", "userSpaceOnUse")
-        .attr("patternTransform", "rotate(45)")
-        .html(`
-            <rect width="8" height="8" fill="${themes[activeTheme].visited}" />
-            <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,255,255,0.25)" stroke-width="3" />
-        `);
+    if (svg.select("defs").empty()) {
+        svg.append("defs")
+            .append("pattern")
+            .attr("id", "selected-stripe-pattern")
+            .attr("width", 8)
+            .attr("height", 8)
+            .attr("patternUnits", "userSpaceOnUse")
+            .attr("patternTransform", "rotate(45)")
+            .html(`
+                <rect width="8" height="8" fill="${themes[activeTheme].visited}" />
+                <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,255,255,0.25)" stroke-width="3" />
+            `);
+    } else {
+        svg.select("#selected-stripe-pattern rect")
+            .attr("fill", themes[activeTheme].visited);
+    }
 
     // 3. Render Orange Pin Markers for unvisited states
-    statesGeo.forEach(d => {
+    const pinData = statesGeo.filter(d => {
         const stateName = fipsToState[d.id];
-        if (!stateName || !travels[stateName]?.unvisited) return;
-        
-        const centroid = path.centroid(d);
-        if (!centroid || isNaN(centroid[0]) || isNaN(centroid[1])) return;
-        
-        let [x, y] = centroid;
-        
-        // Minor visual offsets for optimal centroid pin layouts
-        if (stateName === "California") { x -= 8; y += 12; }
-        else if (stateName === "Michigan") { x += 15; y += 15; }
-        else if (stateName === "Florida") { x += 12; y += 5; }
-        else if (stateName === "Alaska") { x += 15; y -= 5; }
-        else if (stateName === "Hawaii") { x -= 5; y += 5; }
-        
-        const pinGroup = g.append("g")
-            .attr("class", "pin-marker cursor-pointer")
-            .attr("transform", `translate(${x}, ${y - 12})`)
-            .on("click", (event) => {
-                event.stopPropagation();
-                selectState(stateName);
-                zoomToState(stateName);
-            });
-            
-        // Pulse background circle
-        pinGroup.append("circle")
-            .attr("r", 9)
-            .attr("fill", "var(--primary-light)")
-            .attr("class", "pulse-pin-active");
-            
-        // Solid pin top
-        pinGroup.append("circle")
-            .attr("r", 4)
-            .attr("fill", "var(--primary)")
-            .attr("stroke", "var(--bg-card)")
-            .attr("stroke-width", "1px");
-            
-        // Pin pointer stem
-        pinGroup.append("path")
-            .attr("d", "M -4 -4 L 0 5 L 4 -4 Z")
-            .attr("fill", "var(--primary)");
+        return stateName && travels[stateName]?.unvisited;
     });
+
+    g.selectAll("g.pin-marker")
+        .data(pinData, d => d.id)
+        .join(
+            enter => {
+                const pinGroup = enter.append("g")
+                    .attr("class", "pin-marker cursor-pointer")
+                    .on("click", (event, d) => {
+                        event.stopPropagation();
+                        const stateName = fipsToState[d.id];
+                        if (stateName) {
+                            selectState(stateName);
+                            zoomToState(stateName);
+                        }
+                    });
+
+                // Pulse background circle
+                pinGroup.append("circle")
+                    .attr("r", 9)
+                    .attr("fill", "var(--primary-light)")
+                    .attr("class", "pulse-pin-active");
+
+                // Solid pin top
+                pinGroup.append("circle")
+                    .attr("r", 4)
+                    .attr("fill", "var(--primary)")
+                    .attr("stroke", "var(--bg-card)")
+                    .attr("stroke-width", "1px");
+
+                // Pin pointer stem
+                pinGroup.append("path")
+                    .attr("d", "M -4 -4 L 0 5 L 4 -4 Z")
+                    .attr("fill", "var(--primary)");
+
+                return pinGroup;
+            },
+            update => update,
+            exit => exit.remove()
+        )
+        .attr("transform", d => {
+            const stateName = fipsToState[d.id];
+            const centroid = path.centroid(d);
+            if (!centroid || isNaN(centroid[0]) || isNaN(centroid[1])) return "translate(0,0)";
+            
+            let [x, y] = centroid;
+            
+            // Minor visual offsets for optimal centroid pin layouts
+            if (stateName === "California") { x -= 8; y += 12; }
+            else if (stateName === "Michigan") { x += 15; y += 15; }
+            else if (stateName === "Florida") { x += 12; y += 5; }
+            else if (stateName === "Alaska") { x += 15; y -= 5; }
+            else if (stateName === "Hawaii") { x -= 5; y += 5; }
+            
+            return `translate(${x}, ${y - 12})`;
+        });
 
     // 4. Coordinates Mouse tracking
     svg.on("mousemove", (event) => {

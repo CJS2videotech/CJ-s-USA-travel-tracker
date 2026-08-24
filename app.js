@@ -321,6 +321,16 @@ function saveLocalStorage() {
 }
 
 // 4. UI Toast System
+function escapeHTML(str) {
+    if (!str) return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function showToast(title, message, type = 'info') {
     const container = document.getElementById("toast-container");
     const toast = document.createElement("div");
@@ -870,7 +880,7 @@ function renderTripTimeline(stateName) {
             <div class="timeline-node"></div>
             <div class="timeline-content">
                 <div class="timeline-hdr-row">
-                    <span class="timeline-entry-title">${trip.name}</span>
+                    <span class="timeline-entry-title">${escapeHTML(trip.name)}</span>
                     <button class="btn-delete-trip" onclick="deleteTripEntry('${stateName}', '${trip.id}')" title="Delete entry">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
@@ -880,7 +890,7 @@ function renderTripTimeline(stateName) {
                     <span>•</span>
                     <span class="timeline-type-badge">${trip.type}</span>
                 </div>
-                ${trip.notes ? `<p class="timeline-desc">${trip.notes}</p>` : ''}
+                ${trip.notes ? `<p class="timeline-desc">${escapeHTML(trip.notes)}</p>` : ''}
             </div>
         `;
         listContainer.appendChild(item);

@@ -399,7 +399,6 @@ async function initFirebase() {
                 return docSnap.exists() ? docSnap.data() : null;
             };
 
-            console.log("Firebase sync engine loaded successfully.");
             
             // If page loaded with mapId parameter, fetch immediately
             checkSyncQueryParam();

@@ -210,4 +210,18 @@ describe("App Tests", () => {
         window.resetMapZoom();
         expect(global.d3.select().transition().duration().call).toHaveBeenCalled();
     });
+
+    test("should handle localStorage corruption gracefully", () => {
+        const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        localStorage.setItem('us_travel_data_map', '{ corrupted_json: true'); // Invalid JSON
+
+        window.onload();
+
+        expect(consoleSpy).toHaveBeenCalledWith(
+            "Failed to load local storage.",
+            expect.any(SyntaxError)
+        );
+
+        consoleSpy.mockRestore();
+    });
 });

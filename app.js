@@ -439,16 +439,7 @@ async function initMap() {
     }
 }
 
-function renderMap() {
-    if (!usMapData) return;
-    
-    // Clear out D3 group elements
-    g.selectAll("*").remove();
-    d3.select("#map-parent").style("background-color", themes[activeTheme].ocean);
-    
-    const statesGeo = topojson.feature(usMapData, usMapData.objects.states).features;
-    
-    // 1. Draw States
+function drawStates(statesGeo) {
     g.selectAll("path")
         .data(statesGeo)
         .join("path")
@@ -499,8 +490,9 @@ function renderMap() {
                 zoomToState(stateName);
             }
         });
+}
 
-    // 2. Draw patterns for selected states
+function drawSelectedPatterns() {
     svg.append("defs")
         .append("pattern")
         .attr("id", "selected-stripe-pattern")
@@ -512,8 +504,9 @@ function renderMap() {
             <rect width="8" height="8" fill="${themes[activeTheme].visited}" />
             <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,255,255,0.25)" stroke-width="3" />
         `);
+}
 
-    // 3. Render Orange Pin Markers for unvisited states
+function renderPins(statesGeo) {
     statesGeo.forEach(d => {
         const stateName = fipsToState[d.id];
         if (!stateName || !travels[stateName]?.unvisited) return;
@@ -557,8 +550,9 @@ function renderMap() {
             .attr("d", "M -4 -4 L 0 5 L 4 -4 Z")
             .attr("fill", "var(--primary)");
     });
+}
 
-    // 4. Coordinates Mouse tracking
+function setupMouseTracking() {
     svg.on("mousemove", (event) => {
         const coords = projection.invert(d3.pointer(event));
         if (coords && !isNaN(coords[0]) && !isNaN(coords[1])) {
@@ -572,6 +566,21 @@ function renderMap() {
     }).on("mouseleave", () => {
         document.getElementById("coordinates-hud").textContent = `LAT: 37.0902° N | LNG: 95.7129° W`;
     });
+}
+
+function renderMap() {
+    if (!usMapData) return;
+
+    // Clear out D3 group elements
+    g.selectAll("*").remove();
+    d3.select("#map-parent").style("background-color", themes[activeTheme].ocean);
+
+    const statesGeo = topojson.feature(usMapData, usMapData.objects.states).features;
+
+    drawStates(statesGeo);
+    drawSelectedPatterns();
+    renderPins(statesGeo);
+    setupMouseTracking();
 }
 
 function zoomInMap() {

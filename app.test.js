@@ -25,6 +25,10 @@ global.d3 = {
         style: jest.fn().mockReturnThis(),
         call: jest.fn(),
         on: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnValue({
+            empty: jest.fn().mockReturnValue(true),
+            attr: jest.fn().mockReturnThis()
+        }),
         selectAll: jest.fn().mockReturnValue({
             remove: jest.fn()
         }),

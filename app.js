@@ -144,6 +144,8 @@ const regions = {
     "Territories": ["Puerto Rico", "US Virgin Islands", "Guam", "American Samoa", "Northern Mariana Islands"]
 };
 
+const territoriesSet = new Set(regions.Territories);
+
 // Landmarks Data
 const preloadedLandmarks = {
     "Alabama": ["US Space & Rocket Center", "Gulf Shores", "Civil Rights Memorial"],
@@ -681,7 +683,7 @@ function updateDashboard() {
     // and count checked landmarks globally
     Object.keys(travels).forEach(name => {
         // Exclude territories from standard 50 count percentage
-        if (!regions.Territories.includes(name)) {
+        if (!territoriesSet.has(name)) {
             if (!travels[name].unvisited) visitedCount++;
         }
 

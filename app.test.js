@@ -211,3 +211,77 @@ describe("App Tests", () => {
         expect(global.d3.select().transition().duration().call).toHaveBeenCalled();
     });
 });
+
+describe("Toast Tests", () => {
+    beforeAll(async () => {
+        require('./app.js');
+        window.onload();
+        await new Promise(r => setTimeout(r, 100));
+    });
+
+    beforeEach(() => {
+        document.getElementById('toast-container').innerHTML = '';
+        jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+        jest.runOnlyPendingTimers();
+        jest.useRealTimers();
+    });
+
+    test("should display default info toast correctly", () => {
+        window.showToast("Info Title", "Info Message");
+
+        const container = document.getElementById("toast-container");
+        expect(container.children.length).toBe(1);
+
+        const toast = container.firstElementChild;
+        expect(toast.className).toBe("toast");
+
+        expect(toast.querySelector('.toast-title').textContent).toBe("Info Title");
+        expect(toast.querySelector('.toast-msg').textContent).toBe("Info Message");
+
+        const icon = toast.querySelector('i');
+        expect(icon.classList.contains('fa-circle-info')).toBe(true);
+        expect(icon.classList.contains('color-indigo')).toBe(true);
+    });
+
+    test("should display success toast correctly", () => {
+        window.showToast("Success Title", "Success Message", "success");
+
+        const toast = document.getElementById("toast-container").firstElementChild;
+        const icon = toast.querySelector('i');
+        expect(icon.classList.contains('fa-circle-check')).toBe(true);
+        expect(icon.classList.contains('color-green')).toBe(true);
+    });
+
+    test("should display error toast correctly", () => {
+        window.showToast("Error Title", "Error Message", "error");
+
+        const toast = document.getElementById("toast-container").firstElementChild;
+        const icon = toast.querySelector('i');
+        expect(icon.classList.contains('fa-circle-exclamation')).toBe(true);
+        expect(icon.classList.contains('color-red')).toBe(true);
+    });
+
+    test("should manage toast lifecycle with timers", () => {
+        window.showToast("Timer Title", "Timer Message");
+
+        const toast = document.getElementById("toast-container").firstElementChild;
+
+        // Initially should not be visible
+        expect(toast.classList.contains("visible")).toBe(false);
+
+        // Advance by 10ms to add 'visible' class
+        jest.advanceTimersByTime(10);
+        expect(toast.classList.contains("visible")).toBe(true);
+
+        // Advance by 4000ms to remove 'visible' class
+        jest.advanceTimersByTime(4000);
+        expect(toast.classList.contains("visible")).toBe(false);
+
+        // Advance by 400ms to remove element
+        jest.advanceTimersByTime(400);
+        expect(document.getElementById("toast-container").children.length).toBe(0);
+    });
+});

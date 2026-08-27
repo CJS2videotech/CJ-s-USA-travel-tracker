@@ -281,6 +281,22 @@ const zoom = d3.zoom()
     });
 svg.call(zoom);
 
+// Helper function to safely merge travel data state
+function mergeTravelData(sourceData) {
+    if (!sourceData) return;
+    Object.keys(initialTravelData).forEach(state => {
+        if (sourceData[state]) {
+            travels[state] = {
+                unvisited: sourceData[state].unvisited !== undefined ? sourceData[state].unvisited : true,
+                notes: sourceData[state].notes || "",
+                date: sourceData[state].date || "",
+                trips: sourceData[state].trips || [],
+                landmarks: sourceData[state].landmarks || []
+            };
+        }
+    });
+}
+
 // 3. Load & Cache Functions
 function loadLocalStorage() {
     try {
@@ -288,17 +304,7 @@ function loadLocalStorage() {
         if (cachedTravels) {
             const parsed = JSON.parse(cachedTravels);
             // Deep merge to safeguard schema updates (trips/landmarks)
-            Object.keys(initialTravelData).forEach(state => {
-                if (parsed[state]) {
-                    travels[state] = {
-                        unvisited: parsed[state].unvisited !== undefined ? parsed[state].unvisited : true,
-                        notes: parsed[state].notes || "",
-                        date: parsed[state].date || "",
-                        trips: parsed[state].trips || [],
-                        landmarks: parsed[state].landmarks || []
-                    };
-                }
-            });
+            mergeTravelData(parsed);
         }
         
         travelerName = localStorage.getItem('us_travel_traveler_name') || 'My';
@@ -1011,17 +1017,7 @@ function restoreDataFromFile(file) {
             const imported = JSON.parse(e.target.result);
             if (imported.travels) {
                 // Merge import schema safely
-                Object.keys(initialTravelData).forEach(state => {
-                    if (imported.travels[state]) {
-                        travels[state] = {
-                            unvisited: imported.travels[state].unvisited !== undefined ? imported.travels[state].unvisited : true,
-                            notes: imported.travels[state].notes || "",
-                            date: imported.travels[state].date || "",
-                            trips: imported.travels[state].trips || [],
-                            landmarks: imported.travels[state].landmarks || []
-                        };
-                    }
-                });
+                mergeTravelData(imported.travels);
                 
                 travelerName = imported.travelerName || 'My';
                 activeTheme = imported.activeTheme || 'classic';
@@ -1162,17 +1158,7 @@ async function loadFromCloudCode() {
         const data = await window.firebaseLoadFromCloud(rawCode);
         if (data) {
             // Merge import schema safely
-            Object.keys(initialTravelData).forEach(state => {
-                if (data.travels[state]) {
-                    travels[state] = {
-                        unvisited: data.travels[state].unvisited !== undefined ? data.travels[state].unvisited : true,
-                        notes: data.travels[state].notes || "",
-                        date: data.travels[state].date || "",
-                        trips: data.travels[state].trips || [],
-                        landmarks: data.travels[state].landmarks || []
-                    };
-                }
-            });
+            mergeTravelData(data.travels);
             
             travelerName = data.travelerName || 'My';
             activeTheme = data.activeTheme || 'classic';
@@ -1247,17 +1233,7 @@ function checkDataQueryParam() {
             const imported = JSON.parse(decodedData);
             if (imported.travels) {
                 // Merge import schema safely
-                Object.keys(initialTravelData).forEach(state => {
-                    if (imported.travels[state]) {
-                        travels[state] = {
-                            unvisited: imported.travels[state].unvisited !== undefined ? imported.travels[state].unvisited : true,
-                            notes: imported.travels[state].notes || "",
-                            date: imported.travels[state].date || "",
-                            trips: imported.travels[state].trips || [],
-                            landmarks: imported.travels[state].landmarks || []
-                        };
-                    }
-                });
+                mergeTravelData(imported.travels);
 
                 travelerName = imported.travelerName || 'My';
                 activeTheme = imported.activeTheme || 'classic';
@@ -1325,6 +1301,7 @@ window.zoomInMap = zoomInMap;
 window.zoomOutMap = zoomOutMap;
 window.resetMapZoom = resetMapZoom;
 window.deleteTripEntry = deleteTripEntry;
+window.mergeTravelData = mergeTravelData;
 
 // Bootstrapping
 window.onload = function() {

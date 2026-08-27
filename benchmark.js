@@ -1,39 +1,84 @@
-// Baseline benchmark for formatMonthYear
+const regions = {
+    "Territories": ["Puerto Rico", "US Virgin Islands", "Guam", "American Samoa", "Northern Mariana Islands"]
+};
 
-function formatMonthYear_original(ymString) {
-    if (!ymString) return "";
-    const [year, month] = ymString.split('-');
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${months[parseInt(month, 10) - 1]} ${year}`;
+const travels = {};
+for (let i = 0; i < 50; i++) {
+    travels[`State_${i}`] = { unvisited: false, landmarks: [1, 2, 3] };
+}
+for (const terr of regions.Territories) {
+    travels[terr] = { unvisited: false, landmarks: [1] };
 }
 
-const months_array = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-function formatMonthYear_optimized(ymString) {
-    if (!ymString) return "";
-    const [year, month] = ymString.split('-');
-    return `${months_array[parseInt(month, 10) - 1]} ${year}`;
+function originalUpdateDashboard() {
+    let visitedCount = 0;
+    let landmarkCount = 0;
+
+    Object.keys(travels).forEach(name => {
+        if (!regions.Territories.includes(name)) {
+            if (!travels[name].unvisited) visitedCount++;
+        }
+        if (travels[name].landmarks) {
+            landmarkCount += travels[name].landmarks.length;
+        }
+    });
+    return visitedCount;
 }
 
-const iterations = 10000000;
-const testDate = "2023-05";
+// Global Set optimization
+const territoriesSet = new Set(regions.Territories);
+function optimizedUpdateDashboardGlobal() {
+    let visitedCount = 0;
+    let landmarkCount = 0;
 
-// Warmup
-for (let i = 0; i < 100000; i++) {
-    formatMonthYear_original(testDate);
-    formatMonthYear_optimized(testDate);
+    Object.keys(travels).forEach(name => {
+        if (!territoriesSet.has(name)) {
+            if (!travels[name].unvisited) visitedCount++;
+        }
+        if (travels[name].landmarks) {
+            landmarkCount += travels[name].landmarks.length;
+        }
+    });
+    return visitedCount;
 }
 
-const start_original = process.hrtime.bigint();
-for (let i = 0; i < iterations; i++) {
-    formatMonthYear_original(testDate);
-}
-const end_original = process.hrtime.bigint();
+// Local Set optimization
+function optimizedUpdateDashboardLocal() {
+    let visitedCount = 0;
+    let landmarkCount = 0;
+    const localTerritoriesSet = new Set(regions.Territories);
 
-const start_optimized = process.hrtime.bigint();
-for (let i = 0; i < iterations; i++) {
-    formatMonthYear_optimized(testDate);
+    Object.keys(travels).forEach(name => {
+        if (!localTerritoriesSet.has(name)) {
+            if (!travels[name].unvisited) visitedCount++;
+        }
+        if (travels[name].landmarks) {
+            landmarkCount += travels[name].landmarks.length;
+        }
+    });
+    return visitedCount;
 }
-const end_optimized = process.hrtime.bigint();
 
-console.log(`Original Time:  ${Number(end_original - start_original) / 1000000} ms`);
-console.log(`Optimized Time: ${Number(end_optimized - start_optimized) / 1000000} ms`);
+const ITERS = 1000000;
+
+const startOriginal = performance.now();
+for (let i = 0; i < ITERS; i++) {
+    originalUpdateDashboard();
+}
+const endOriginal = performance.now();
+console.log(`Original: ${(endOriginal - startOriginal).toFixed(2)} ms`);
+
+const startOptimizedGlobal = performance.now();
+for (let i = 0; i < ITERS; i++) {
+    optimizedUpdateDashboardGlobal();
+}
+const endOptimizedGlobal = performance.now();
+console.log(`Optimized Global: ${(endOptimizedGlobal - startOptimizedGlobal).toFixed(2)} ms`);
+
+const startOptimizedLocal = performance.now();
+for (let i = 0; i < ITERS; i++) {
+    optimizedUpdateDashboardLocal();
+}
+const endOptimizedLocal = performance.now();
+console.log(`Optimized Local: ${(endOptimizedLocal - startOptimizedLocal).toFixed(2)} ms`);
+

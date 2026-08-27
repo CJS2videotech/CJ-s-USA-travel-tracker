@@ -1325,6 +1325,7 @@ window.zoomInMap = zoomInMap;
 window.zoomOutMap = zoomOutMap;
 window.resetMapZoom = resetMapZoom;
 window.deleteTripEntry = deleteTripEntry;
+window.showToast = showToast;
 
 // Bootstrapping
 window.onload = function() {

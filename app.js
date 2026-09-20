@@ -877,23 +877,59 @@ function renderTripTimeline(stateName) {
     sorted.forEach(trip => {
         const item = document.createElement("div");
         item.className = "timeline-item";
-        item.innerHTML = `
-            <div class="timeline-node"></div>
-            <div class="timeline-content">
-                <div class="timeline-hdr-row">
-                    <span class="timeline-entry-title">${trip.name}</span>
-                    <button class="btn-delete-trip" onclick="deleteTripEntry('${stateName}', '${trip.id}')" title="Delete entry">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
-                <div class="timeline-meta-row">
-                    <span>${formatMonthYear(trip.date)}</span>
-                    <span>•</span>
-                    <span class="timeline-type-badge">${trip.type}</span>
-                </div>
-                ${trip.notes ? `<p class="timeline-desc">${trip.notes}</p>` : ''}
-            </div>
-        `;
+
+        const node = document.createElement("div");
+        node.className = "timeline-node";
+
+        const content = document.createElement("div");
+        content.className = "timeline-content";
+
+        const hdrRow = document.createElement("div");
+        hdrRow.className = "timeline-hdr-row";
+
+        const titleSpan = document.createElement("span");
+        titleSpan.className = "timeline-entry-title";
+        titleSpan.textContent = trip.name;
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "btn-delete-trip";
+        deleteBtn.title = "Delete entry";
+        deleteBtn.onclick = () => deleteTripEntry(stateName, trip.id);
+        deleteBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+
+        hdrRow.appendChild(titleSpan);
+        hdrRow.appendChild(deleteBtn);
+
+        const metaRow = document.createElement("div");
+        metaRow.className = "timeline-meta-row";
+
+        const dateSpan = document.createElement("span");
+        dateSpan.textContent = formatMonthYear(trip.date);
+
+        const dotSpan = document.createElement("span");
+        dotSpan.textContent = "•";
+
+        const typeBadge = document.createElement("span");
+        typeBadge.className = "timeline-type-badge";
+        typeBadge.textContent = trip.type;
+
+        metaRow.appendChild(dateSpan);
+        metaRow.appendChild(dotSpan);
+        metaRow.appendChild(typeBadge);
+
+        content.appendChild(hdrRow);
+        content.appendChild(metaRow);
+
+        if (trip.notes) {
+            const descP = document.createElement("p");
+            descP.className = "timeline-desc";
+            descP.textContent = trip.notes;
+            content.appendChild(descP);
+        }
+
+        item.appendChild(node);
+        item.appendChild(content);
+
         listContainer.appendChild(item);
     });
 }
